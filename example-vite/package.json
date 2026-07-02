@@ -1,0 +1,19 @@
+{
+  "name": "example-vite",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "e2e": "node e2e.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "huaqi-FE-tracer": "file:..",
+    "vite": "^5.4.0"
+  }
+}

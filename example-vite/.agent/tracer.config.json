@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "log": { "dir": ".agent/tracer/logs" },
+  "traces": [
+    {
+      "id": "fetchUserData",
+      "type": "api_call",
+      "match": { "kind": "function_call", "name": "fetchUserData" },
+      "capture": ["arguments[0]"]
+    },
+    {
+      "id": "fetchUserDataResp",
+      "type": "api_response",
+      "match": { "kind": "function_call", "name": "fetchUserData" },
+      "capture": ["returnValue"]
+    },
+    {
+      "id": "setUserAuth",
+      "type": "state_change",
+      "match": { "kind": "assignment", "name": "userAuth" },
+      "capture": ["value"]
+    }
+  ]
+}
