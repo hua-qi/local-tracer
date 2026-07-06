@@ -4,6 +4,10 @@
   "description": "纯本地 dev 工具：构建期注入运行时埋点，让 Code Agent 看见前端运行时状态",
   "type": "commonjs",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://git.corp.kuaishou.com/toft/local-runtime-tracer"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
