@@ -31,7 +31,7 @@ export function huaqiFEVitePlugin(options: HuaqiFEVitePluginOptions = {}): Plugi
   }
 
   return {
-    name: 'local-runtime-tracer',
+    name: '@toft/local-runtime-tracer',
     apply: 'serve',
     configureServer(server: ViteDevServer) {
       server.middlewares.use((req, res, next) => {

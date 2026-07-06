@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { huaqiFEVitePlugin } from 'local-runtime-tracer/vite'
+import { huaqiFEVitePlugin } from '@toft/local-runtime-tracer/vite'
 
 // `root` is resolved relative to this file so the plugin finds
 // .agent/tracer.config.json no matter where `vite` is invoked from.

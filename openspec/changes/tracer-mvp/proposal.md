@@ -33,7 +33,7 @@ _None — 项目当前 openspec/specs/ 为空，本次为首次建立 spec。_
 
 ## Impact
 
-- 新增包 `local-runtime-tracer`，依赖 `@babel/parser`、`@babel/traverse`、`@babel/generator`、`@babel/types`
+- 新增包 `@toft/local-runtime-tracer`，依赖 `@babel/parser`、`@babel/traverse`、`@babel/generator`、`@babel/types`
 - 对 Vite/Webpack 用户：以 devDependency 接入，零侵入业务代码；仅在本地 dev 生效，不影响生产构建
 - 引入 `.agent/tracer.config.json`（tracer 配置）与 `.agent/tracer/logs/*.jsonl`（运行时日志），需加入 `.gitignore`
 - 新增示例项目 `example-vite/`、`example-webpack/`

@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.0",
-    "local-runtime-tracer": "file:..",
+    "@toft/local-runtime-tracer": "file:..",
     "vite": "^5.4.0"
   }
 }

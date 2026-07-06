@@ -56,7 +56,7 @@ export class HuaqiFEWebpackPlugin {
         if (!self.middlewareAttached) {
           self.middlewareAttached = true
           middlewares.unshift({
-            name: 'local-runtime-tracer',
+            name: '@toft/local-runtime-tracer',
             middleware: tracerMiddleware,
           })
         }
@@ -70,7 +70,7 @@ export class HuaqiFEWebpackPlugin {
         if (!self.middlewareAttached) {
           self.middlewareAttached = true
           middlewares.unshift({
-            name: 'local-runtime-tracer',
+            name: '@toft/local-runtime-tracer',
             middleware: tracerMiddleware,
           })
         }

@@ -1,6 +1,6 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const { HuaqiFEWebpackPlugin } = require('local-runtime-tracer/webpack')
+const { HuaqiFEWebpackPlugin } = require('@toft/local-runtime-tracer/webpack')
 
 /** @type {import('webpack').Configuration & { devServer?: any }} */
 module.exports = {

@@ -1,5 +1,5 @@
 {
-  "name": "local-runtime-tracer",
+  "name": "@toft/local-runtime-tracer",
   "version": "0.1.0",
   "description": "纯本地 dev 工具：构建期注入运行时埋点，让 Code Agent 看见前端运行时状态",
   "type": "commonjs",
