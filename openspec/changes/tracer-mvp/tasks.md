@@ -1,6 +1,6 @@
 ## 1. 项目骨架
 
-- [x] 1.1 初始化 `package.json`（name: `huaqi-FE-tracer`，type: module，exports 暴露 `/vite` 与 `/webpack` 子路径）
+- [x] 1.1 初始化 `package.json`（name: `local-runtime-tracer`，type: module，exports 暴露 `/vite` 与 `/webpack` 子路径）
 - [x] 1.2 配置 TypeScript + 构建脚本（tsc 输出 ESM 到 `dist/`）
 - [x] 1.3 安装依赖：`@babel/parser`、`@babel/traverse`、`@babel/generator`、`@babel/types`；dev 依赖：`vite`、`webpack`、`webpack-dev-server`、`vitest`
 - [x] 1.4 建立目录结构 `src/core/`、`src/vite/`、`src/webpack/`、`example-vite/`、`example-webpack/`

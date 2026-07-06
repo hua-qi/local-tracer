@@ -2,7 +2,7 @@
 
 ## 概述
 
-huaqi-FE-tracer 是一个纯本地 dev 工具，让 Code Agent 能看到前端运行时实际状态。MVP 范围：Vite + Webpack 全链路 + `api_call` / `api_response` / `state_change` 三类埋点。
+local-runtime-tracer 是一个纯本地 dev 工具，让 Code Agent 能看到前端运行时实际状态。MVP 范围：Vite + Webpack 全链路 + `api_call` / `api_response` / `state_change` 三类埋点。
 
 ## 架构
 

@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: Skill 文件交付
-仓库 SHALL 在 `skill.md` 提供 Code Agent 的使用指引，用户通过 `cp node_modules/huaqi-FE-tracer/skill.md .claude/skills/tracer.md` 手动安装。
+仓库 SHALL 在 `skill.md` 提供 Code Agent 的使用指引，用户通过 `cp node_modules/local-runtime-tracer/skill.md .claude/skills/tracer.md` 手动安装。
 
 #### Scenario: 用户安装 skill
-- **WHEN** 用户执行 `cp node_modules/huaqi-FE-tracer/skill.md .claude/skills/tracer.md`
+- **WHEN** 用户执行 `cp node_modules/local-runtime-tracer/skill.md .claude/skills/tracer.md`
 - **THEN** Claude Code 在后续会话中可调用 tracer skill
 
 ### Requirement: Skill 指导 config 生成

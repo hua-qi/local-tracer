@@ -1,10 +1,10 @@
 ---
-description: Use huaqi-FE-tracer to debug tricky frontend bugs by generating a runtime trace config, asking the user to reproduce, then reading the resulting JSONL log to diagnose.
+description: Use local-runtime-tracer to debug tricky frontend bugs by generating a runtime trace config, asking the user to reproduce, then reading the resulting JSONL log to diagnose.
 ---
 
 # Tracer — Runtime Trace for Code Agents
 
-This skill guides you (the Code Agent) through the **huaqi-FE-tracer** debugging loop. Tracer is a **local dev-only** tool: it injects runtime instrumentation into the build, writes structured events to a local JSONL log, and you read that log to see what the code actually did in the browser.
+This skill guides you (the Code Agent) through the **local-runtime-tracer** debugging loop. Tracer is a **local dev-only** tool: it injects runtime instrumentation into the build, writes structured events to a local JSONL log, and you read that log to see what the code actually did in the browser.
 
 Use Tracer only when:
 

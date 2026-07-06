@@ -1,10 +1,10 @@
-# huaqi-FE-tracer — 运行时追踪脚手架 MVP PRD v2
+# local-runtime-tracer — 运行时追踪脚手架 MVP PRD v2
 
 ## 1. 概述
 
 ### 1.1 产品定位
 
-**huaqi-FE-tracer 是一个纯本地开发调试工具，辅助 Code Agent 在前端项目中定位复杂 bug。**
+**local-runtime-tracer 是一个纯本地开发调试工具，辅助 Code Agent 在前端项目中定位复杂 bug。**
 
 它不面向生产环境，不上报任何数据到远端，不考虑性能开销和产物体积。唯一的使用场景是：开发者在本地 `npm run dev`，Code Agent 借助运行时日志来理解代码的实际执行情况，从而更精准地定位问题。
 
@@ -104,7 +104,7 @@ Code Agent
 - 可视化 Dashboard
 - Log Server 独立进程（直接挂 dev server）
 - postinstall 自动安装 skill（用户手动 cp）
-- **生产环境、线上部署、远端上报——huaqi-FE-tracer 是纯本地工具**
+- **生产环境、线上部署、远端上报——local-runtime-tracer 是纯本地工具**
 
 ### 3.3 支持的埋点类型
 
@@ -150,7 +150,7 @@ Code Agent
 ### 4.2 目录结构
 
 ```
-huaqi-FE-tracer/
+local-runtime-tracer/
 ├── package.json
 ├── src/
 │   ├── core/
@@ -465,8 +465,8 @@ async function fetchUserData(id: number) {
 Skill 文件随 npm 包分发，用户手动安装：
 
 ```bash
-npm install -D huaqi-FE-tracer
-cp node_modules/huaqi-FE-tracer/skill.md .claude/skills/tracer.md
+npm install -D local-runtime-tracer
+cp node_modules/local-runtime-tracer/skill.md .claude/skills/tracer.md
 ```
 
 选择手动复制而非 postinstall 自动安装，降低侵入性。
@@ -487,19 +487,19 @@ Skill 指导 Code Agent 完成以下闭环：
 
 ```bash
 # 1. 安装（本地 devDependency）
-npm install -D huaqi-FE-tracer
+npm install -D local-runtime-tracer
 
 # 2. 配置构建工具（二选一，本地配置文件）
 # vite.config.ts:
-import { tracerVitePlugin } from 'huaqi-FE-tracer/vite'
+import { tracerVitePlugin } from 'local-runtime-tracer/vite'
 export default { plugins: [tracerVitePlugin()] }
 
 # webpack.config.js:
-const { TracerWebpackPlugin } = require('huaqi-FE-tracer/webpack')
+const { TracerWebpackPlugin } = require('local-runtime-tracer/webpack')
 module.exports = { plugins: [new TracerWebpackPlugin()] }
 
 # 3. 安装 Skill（本地 skill 目录）
-cp node_modules/huaqi-FE-tracer/skill.md .claude/skills/tracer.md
+cp node_modules/local-runtime-tracer/skill.md .claude/skills/tracer.md
 
 # 4. 启动本地 dev server（插件自动挂载 /rt 路由）
 npm run dev

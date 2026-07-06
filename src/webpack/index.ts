@@ -56,7 +56,7 @@ export class HuaqiFEWebpackPlugin {
         if (!self.middlewareAttached) {
           self.middlewareAttached = true
           middlewares.unshift({
-            name: 'huaqi-fe-tracer',
+            name: 'local-runtime-tracer',
             middleware: tracerMiddleware,
           })
         }
@@ -70,7 +70,7 @@ export class HuaqiFEWebpackPlugin {
         if (!self.middlewareAttached) {
           self.middlewareAttached = true
           middlewares.unshift({
-            name: 'huaqi-fe-tracer',
+            name: 'local-runtime-tracer',
             middleware: tracerMiddleware,
           })
         }
