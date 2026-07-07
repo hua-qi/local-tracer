@@ -1,10 +1,10 @@
 ---
-description: 使用 @toft/local-runtime-tracer 调试棘手的前端 bug：生成运行时追踪配置，让用户复现问题，然后读取生成的 JSONL 日志来诊断问题。
+description: 使用 @toft/local-tracer 调试棘手的前端 bug：生成运行时追踪配置，让用户复现问题，然后读取生成的 JSONL 日志来诊断问题。
 ---
 
 # Tracer — Code Agent 运行时追踪
 
-本技能指导你（Code Agent）完成 **@toft/local-runtime-tracer** 调试循环。Tracer 是一个**本地开发专用**工具：它在构建阶段注入运行时探针，将结构化事件写入本地 JSONL 日志，你则通过读取该日志来了解代码在浏览器中的实际行为。
+本技能指导你（Code Agent）完成 **@toft/local-tracer** 调试循环。Tracer 是一个**本地开发专用**工具：它在构建阶段注入运行时探针，将结构化事件写入本地 JSONL 日志，你则通过读取该日志来了解代码在浏览器中的实际行为。
 
 仅在以下场景使用 Tracer：
 
