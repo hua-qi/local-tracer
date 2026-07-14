@@ -57,13 +57,16 @@ describe('createTracerMiddleware', () => {
     const logDir = join(dir, 'logs')
     const mw = createTracerMiddleware({ logDir })
     const payload = {
+      seq: 0,
       traceId: 'abc',
       eventId: 'fetchUserData',
       type: 'api_call',
+      timestamp: 1716000000000,
       data: { x: 1 },
+      request: null,
+      error: null,
       callStack: [],
       url: 'http://localhost:5173',
-      timestamp: 1716000000000,
     }
     const res = await call(mw, JSON.stringify(payload))
     expect(res.status).toBe(200)
@@ -75,8 +78,8 @@ describe('createTracerMiddleware', () => {
 
   it('appends multiple payloads to the same jsonl file', async () => {
     const mw = createTracerMiddleware({ logDir: join(dir, 'logs') })
-    await call(mw, JSON.stringify({ traceId: 't', eventId: 'a', type: 'api_call', timestamp: 1 }))
-    await call(mw, JSON.stringify({ traceId: 't', eventId: 'b', type: 'api_call', timestamp: 2 }))
+    await call(mw, JSON.stringify({ seq: 0, traceId: 't', eventId: 'a', type: 'api_call', timestamp: 1 }))
+    await call(mw, JSON.stringify({ seq: 1, traceId: 't', eventId: 'b', type: 'api_call', timestamp: 2 }))
     const file = join(dir, 'logs', 't.jsonl')
     const lines = readFileSync(file, 'utf-8').trim().split('\n')
     expect(lines).toHaveLength(2)
@@ -100,8 +103,38 @@ describe('createTracerMiddleware', () => {
 
   it('returns 400 when eventId is missing', async () => {
     const mw = createTracerMiddleware({ logDir: join(dir, 'logs') })
-    const res = await call(mw, JSON.stringify({ traceId: 't', type: 'api_call', timestamp: 1 }))
+    const res = await call(mw, JSON.stringify({ seq: 0, traceId: 't', type: 'api_call', timestamp: 1 }))
     expect(res.status).toBe(400)
+  })
+
+  it('returns 400 when seq is missing', async () => {
+    const mw = createTracerMiddleware({ logDir: join(dir, 'logs') })
+    const res = await call(
+      mw,
+      JSON.stringify({ traceId: 't', eventId: 'e', type: 'api_call', timestamp: 1 }),
+    )
+    expect(res.status).toBe(400)
+  })
+
+  it('transparently writes new fields (request, error)', async () => {
+    const mw = createTracerMiddleware({ logDir: join(dir, 'logs') })
+    const payload = {
+      seq: 0,
+      traceId: 't',
+      eventId: 'e',
+      type: 'api_call',
+      timestamp: 1,
+      request: { method: 'GET', url: '/api/users', headers: {}, body: null },
+      error: null,
+      callStack: [{ function: 'fn', file: 'app.js', line: 1, col: 1 }],
+    }
+    const res = await call(mw, JSON.stringify(payload))
+    expect(res.status).toBe(200)
+    const file = join(dir, 'logs', 't.jsonl')
+    const written = JSON.parse(readFileSync(file, 'utf-8').trim())
+    expect(written.request).toEqual(payload.request)
+    expect(written.error).toBeNull()
+    expect(written.callStack).toEqual(payload.callStack)
   })
 
   it('passes through non-POST requests via next()', async () => {
@@ -133,7 +166,7 @@ describe('createTracerMiddleware', () => {
   it('creates nested log dir if missing', async () => {
     const nested = join(dir, 'deep', 'logs')
     const mw = createTracerMiddleware({ logDir: nested })
-    const res = await call(mw, JSON.stringify({ traceId: 't', eventId: 'e', type: 'api_call', timestamp: 1 }))
+    const res = await call(mw, JSON.stringify({ seq: 0, traceId: 't', eventId: 'e', type: 'api_call', timestamp: 1 }))
     expect(res.status).toBe(200)
     expect(existsSync(join(nested, 't.jsonl'))).toBe(true)
   })

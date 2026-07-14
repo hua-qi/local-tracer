@@ -17,7 +17,7 @@ export interface TracerResponse {
   end?(body?: string | Buffer): unknown
 }
 
-const REQUIRED_FIELDS = ['traceId', 'eventId', 'type', 'timestamp'] as const
+const REQUIRED_FIELDS = ['seq', 'traceId', 'eventId', 'type', 'timestamp'] as const
 
 /**
  * Create a dev-server middleware that accepts POST /rt and appends the JSON

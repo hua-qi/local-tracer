@@ -88,7 +88,7 @@ function apply(data) {
         },
       ]),
     )
-    expect(result.code).toContain('function __rt_log(eventId, type, data)')
+    expect(result.code).toContain('function __rt_log(eventId, type, data, errorInfo)')
     expect(result.code).toContain('window.__TRACER_SESSION_ID__')
   })
 
@@ -205,5 +205,66 @@ function Hello() {
       ]),
     )
     expect(result.hasInjection).toBe(false)
+  })
+
+  it('injects try/catch for error type', () => {
+    const code = `
+function run() {
+  fetchUserData(42)
+}
+`
+    const result = inject(
+      code,
+      idx([
+        {
+          id: 'fetchUserData',
+          type: 'error',
+          match: { kind: 'function_call', name: 'fetchUserData' },
+          capture: ['arguments[0]'],
+        },
+      ]),
+    )
+    expect(result.hasInjection).toBe(true)
+    expect(result.code).toContain('try {')
+    expect(result.code).toContain('catch')
+    expect(result.code).toContain('__rt_log("fetchUserData", "error"')
+    expect(result.code).toContain('throw e')
+  })
+
+  it('injects api_response + error together with try/catch', () => {
+    const code = `
+function run() {
+  const res = fetchUserData(42)
+}
+`
+    const result = inject(
+      code,
+      idx([
+        {
+          id: 'fetchUserDataCall',
+          type: 'api_call',
+          match: { kind: 'function_call', name: 'fetchUserData' },
+          capture: ['arguments[0]'],
+        },
+        {
+          id: 'fetchUserDataResp',
+          type: 'api_response',
+          match: { kind: 'function_call', name: 'fetchUserData' },
+          capture: ['returnValue'],
+        },
+        {
+          id: 'fetchUserDataErr',
+          type: 'error',
+          match: { kind: 'function_call', name: 'fetchUserData' },
+          capture: ['arguments[0]'],
+        },
+      ]),
+    )
+    expect(result.hasInjection).toBe(true)
+    expect(result.code).toContain('try {')
+    expect(result.code).toContain('catch')
+    expect(result.code).toContain('__rt_log("fetchUserDataErr", "error"')
+    expect(result.code).toContain('__rt_log("fetchUserDataResp", "api_response"')
+    expect(result.code).toContain('throw e')
   })
 })

@@ -22,10 +22,10 @@ TBD
 - **THEN** 系统 SHALL 视作没有 traces 配置（空配置），不进行 AST 注入，且不阻塞构建
 
 ### Requirement: Config schema 校验
-系统 SHALL 校验配置文件符合以下 schema：顶层字段 `{ version: 1, log: { dir: string }, traces: Trace[] }`。每个 `Trace` SHALL 包含 `id`（非空字符串）、`type`（取值 `api_call` | `api_response` | `state_change`）、`match: { kind: string, name: string }`、`capture: string[]`。
+系统 SHALL 校验配置文件符合以下 schema：顶层字段 `{ version: 1, log: { dir: string }, traces: Trace[] }`。每个 `Trace` SHALL 包含 `id`（非空字符串）、`type`（取值 `api_call` | `api_response` | `state_change` | `error`）、`match: { kind: string, name: string }`、`capture: string[]`。
 
 #### Scenario: 合法配置通过校验
-- **WHEN** 配置文件包含合法 `version`、`log.dir` 与一组合法 trace
+- **WHEN** 配置文件包含合法 `version`、`log.dir` 与一组合法 trace（type 可为 api_call / api_response / state_change / error）
 - **THEN** 系统通过校验并构建匹配器索引
 
 #### Scenario: 缺少必填字段
@@ -33,7 +33,7 @@ TBD
 - **THEN** 系统 SHALL 抛出明确错误信息并终止该次构建的 AST 注入阶段，dev server 仍可正常启动但日志中将出现错误提示
 
 #### Scenario: 不支持的 trace type
-- **WHEN** trace 的 `type` 不在 `api_call` / `api_response` / `state_change` 范围内
+- **WHEN** trace 的 `type` 不在 `api_call` / `api_response` / `state_change` / `error` 范围内
 - **THEN** 系统 SHALL 抛出错误，拒绝该 trace
 
 ### Requirement: 匹配器索引构建

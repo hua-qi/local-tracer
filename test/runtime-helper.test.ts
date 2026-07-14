@@ -54,6 +54,50 @@ describe('runtime-helper', () => {
     expect(payload.traceId).toBe('uuid-1234')
     expect(payload.callStack).toBeInstanceOf(Array)
     expect(typeof payload.timestamp).toBe('number')
+    expect(typeof payload.seq).toBe('number')
+    expect(payload.error).toBeNull()
+  })
+
+  it('increments seq on each call', () => {
+    api.__rt_log('e1', 'api_call', {})
+    api.__rt_log('e2', 'api_call', {})
+    api.__rt_log('e3', 'api_call', {})
+    const calls = w.fetch.mock.calls
+    expect(JSON.parse(calls[0][1].body).seq).toBe(0)
+    expect(JSON.parse(calls[1][1].body).seq).toBe(1)
+    expect(JSON.parse(calls[2][1].body).seq).toBe(2)
+  })
+
+  it('callStack entries are structured objects', () => {
+    api.__rt_log('e', 'api_call', {})
+    const call = w.fetch.mock.calls[0]
+    const payload = JSON.parse(call[1].body)
+    expect(payload.callStack.length).toBeGreaterThan(0)
+    for (const frame of payload.callStack) {
+      expect(frame).toHaveProperty('function')
+      expect(frame).toHaveProperty('file')
+      expect(frame).toHaveProperty('line')
+      expect(frame).toHaveProperty('col')
+      expect(typeof frame.function).toBe('string')
+      expect(typeof frame.file).toBe('string')
+      expect(typeof frame.line).toBe('number')
+      expect(typeof frame.col).toBe('number')
+    }
+  })
+
+  it('populates error field when errorInfo is passed', () => {
+    api.__rt_log('e', 'error', {}, { message: 'Something broke', name: 'TypeError' })
+    const call = w.fetch.mock.calls[0]
+    const payload = JSON.parse(call[1].body)
+    expect(payload.type).toBe('error')
+    expect(payload.error).toEqual({ message: 'Something broke', name: 'TypeError' })
+  })
+
+  it('sets error field to null when no errorInfo provided', () => {
+    api.__rt_log('e', 'api_call', {})
+    const call = w.fetch.mock.calls[0]
+    const payload = JSON.parse(call[1].body)
+    expect(payload.error).toBeNull()
   })
 
   it('swallows fetch failures silently', async () => {

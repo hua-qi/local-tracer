@@ -71,6 +71,21 @@ describe('validateConfig', () => {
     ).toThrow(/duplicate/)
   })
 
+  it('accepts error trace type', () => {
+    const cfg = validateConfig({
+      version: 1,
+      traces: [
+        {
+          id: 'fetchUserDataErr',
+          type: 'error',
+          match: { kind: 'function_call', name: 'fetchUserData' },
+          capture: ['arguments[0]'],
+        },
+      ],
+    })
+    expect(cfg.traces[0].type).toBe('error')
+  })
+
   it('rejects unsupported trace type', () => {
     expect(() =>
       validateConfig({

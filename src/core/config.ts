@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-export type TraceType = 'api_call' | 'api_response' | 'state_change'
+export type TraceType = 'api_call' | 'api_response' | 'state_change' | 'error'
 
 export type MatchKind = 'function_call' | 'assignment'
 
@@ -29,6 +29,7 @@ export const SUPPORTED_TRACE_TYPES: readonly TraceType[] = [
   'api_call',
   'api_response',
   'state_change',
+  'error',
 ] as const
 
 export const SUPPORTED_MATCH_KINDS: readonly MatchKind[] = [

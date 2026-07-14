@@ -23,6 +23,12 @@ export interface InjectOptions {
   prependHelper?: boolean
 }
 
+let tempVarCounter = 0
+
+function makeTempVarName(): string {
+  return `_tracer_${tempVarCounter++}`
+}
+
 export function inject(
   code: string,
   index: MatcherIndex,
@@ -42,9 +48,11 @@ export function inject(
   }
 
   let hasInjection = false
+  const processedCalls = new WeakSet<t.Node>()
 
   traverse(ast, {
     CallExpression(path) {
+      if (processedCalls.has(path.node)) return
       const name = calleeName(path.node.callee)
       if (!name) return
       const traces = index.get(matcherKey('function_call', name))
@@ -52,22 +60,87 @@ export function inject(
       const stmtPath = path.getStatementParent()
       if (!stmtPath) return
 
-      for (const trace of traces) {
-        if (trace.type === 'api_call') {
-          const dataObj = buildDataObject(trace, (spec) => buildArgCapture(spec, path.node.arguments))
-          const [newPath] = stmtPath.insertBefore(makeLogStatement(trace.id, 'api_call', dataObj))
-          // Skip traversal into the inserted statement: its `__rt_log(...)`
-          // callee is intentionally not in the matcher index, but a captured
-          // argument expression (cloned into the data object) might match.
-          newPath?.skip()
-          hasInjection = true
-        } else if (trace.type === 'api_response') {
-          const dataObj = buildDataObject(trace, (spec) => buildReturnCapture(spec, path))
-          const [newPath] = stmtPath.insertAfter(makeLogStatement(trace.id, 'api_response', dataObj))
-          newPath?.skip()
-          hasInjection = true
-        }
+      const apiCallTrace = traces.find((tr) => tr.type === 'api_call')
+      const apiResponseTrace = traces.find((tr) => tr.type === 'api_response')
+      const errorTrace = traces.find((tr) => tr.type === 'error')
+
+      // Insert api_call before the statement
+      if (apiCallTrace) {
+        const dataObj = buildDataObject(apiCallTrace, (spec) => buildArgCapture(spec, path.node.arguments))
+        const [newPath] = stmtPath.insertBefore(makeLogStatement(apiCallTrace.id, 'api_call', dataObj))
+        newPath?.skip()
+        hasInjection = true
       }
+
+      // No response or error to handle → done
+      if (!apiResponseTrace && !errorTrace) return
+
+      // Simple api_response without error: insert after (current behavior)
+      if (apiResponseTrace && !errorTrace) {
+        const dataObj = buildDataObject(apiResponseTrace, (spec) => buildReturnCapture(spec, path))
+        const [newPath] = stmtPath.insertAfter(makeLogStatement(apiResponseTrace.id, 'api_response', dataObj))
+        newPath?.skip()
+        hasInjection = true
+        return
+      }
+
+      // error (with or without api_response): wrap in try/catch
+      processedCalls.add(path.node)
+      const tempVar = makeTempVarName()
+      const replacementStmts: t.Statement[] = []
+
+      // let _tracer_N
+      replacementStmts.push(
+        t.variableDeclaration('let', [
+          t.variableDeclarator(t.identifier(tempVar)),
+        ]),
+      )
+
+      // Build try block: _tracer_N = <original-call>
+      const tryBlock = t.blockStatement([
+        t.expressionStatement(
+          t.assignmentExpression('=', t.identifier(tempVar), path.node),
+        ),
+      ])
+
+      // Build catch clause: __rt_log(id, 'error', dataObj, {message: e.message, name: e.name}); throw e;
+      const errorDataObj = errorTrace
+        ? buildDataObject(errorTrace, (spec) => buildArgCapture(spec, path.node.arguments))
+        : t.objectExpression([])
+      const catchBody = t.blockStatement([
+        makeLogStatementWithError(errorTrace?.id ?? apiResponseTrace!.id, 'error', errorDataObj),
+        t.throwStatement(t.identifier('e')),
+      ])
+      const catchClause = t.catchClause(t.identifier('e'), catchBody)
+
+      replacementStmts.push(t.tryStatement(tryBlock, catchClause))
+
+      // api_response log after try/catch
+      if (apiResponseTrace) {
+        const responseDataObj = buildDataObject(apiResponseTrace, () =>
+          t.objectProperty(t.identifier('returnValue'), t.identifier(tempVar)),
+        )
+        replacementStmts.push(makeLogStatement(apiResponseTrace.id, 'api_response', responseDataObj))
+      }
+
+      // Re-bind original const/let/var
+      const parentDecl = stmtPath.parentPath
+      if (
+        parentDecl &&
+        parentDecl.isVariableDeclarator() &&
+        t.isIdentifier(parentDecl.node.id)
+      ) {
+        const decl = parentDecl.parentPath
+        const kind = decl && decl.isVariableDeclaration() ? decl.node.kind : 'const'
+        replacementStmts.push(
+          t.variableDeclaration(kind, [
+            t.variableDeclarator(t.identifier(parentDecl.node.id.name), t.identifier(tempVar)),
+          ]),
+        )
+      }
+
+      stmtPath.replaceWithMultiple(replacementStmts)
+      hasInjection = true
     },
     AssignmentExpression(path) {
       if (!t.isIdentifier(path.node.left)) return
@@ -99,6 +172,30 @@ function makeLogStatement(traceId: string, type: string, dataObj: t.Expression):
       t.stringLiteral(traceId),
       t.stringLiteral(type),
       dataObj,
+    ]),
+  )
+}
+
+function makeLogStatementWithError(
+  traceId: string,
+  type: string,
+  dataObj: t.Expression,
+): t.ExpressionStatement {
+  return t.expressionStatement(
+    t.callExpression(t.identifier('__rt_log'), [
+      t.stringLiteral(traceId),
+      t.stringLiteral(type),
+      dataObj,
+      t.objectExpression([
+        t.objectProperty(
+          t.identifier('message'),
+          t.memberExpression(t.identifier('e'), t.identifier('message')),
+        ),
+        t.objectProperty(
+          t.identifier('name'),
+          t.memberExpression(t.identifier('e'), t.identifier('name')),
+        ),
+      ]),
     ]),
   )
 }
