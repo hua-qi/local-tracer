@@ -1,13 +1,24 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { compilePattern, globToRegex } from './matcher'
 
 export type TraceType = 'api_call' | 'api_response' | 'state_change' | 'error'
 
-export type MatchKind = 'function_call' | 'assignment'
+export type MatchKind =
+  | 'function_call'
+  | 'assignment'
+  | 'member_assignment'
+  | 'constructor_call'
+  | 'return_point'
+  | 'throw_point'
+
+export type PatternType = 'exact' | 'glob' | 'regex'
 
 export interface Match {
   kind: MatchKind
-  name: string
+  pattern: string
+  patternType?: PatternType
+  fileFilter?: string
 }
 
 export interface Trace {
@@ -23,7 +34,19 @@ export interface TraceConfig {
   traces: Trace[]
 }
 
-export type MatcherIndex = Map<string, Trace[]>
+export interface PatternEntry {
+  kind: MatchKind
+  pattern: string
+  patternType: PatternType
+  compiledRegex: RegExp
+  fileFilterRegex: RegExp | null
+  traces: Trace[]
+}
+
+export interface MatcherIndex {
+  exact: Map<string, Trace[]>
+  patterns: PatternEntry[]
+}
 
 export const SUPPORTED_TRACE_TYPES: readonly TraceType[] = [
   'api_call',
@@ -35,10 +58,22 @@ export const SUPPORTED_TRACE_TYPES: readonly TraceType[] = [
 export const SUPPORTED_MATCH_KINDS: readonly MatchKind[] = [
   'function_call',
   'assignment',
+  'member_assignment',
+  'constructor_call',
+  'return_point',
+  'throw_point',
+] as const
+
+export const SUPPORTED_PATTERN_TYPES: readonly PatternType[] = [
+  'exact',
+  'glob',
+  'regex',
 ] as const
 
 export const DEFAULT_LOG_DIR = '.agent/tracer/logs'
 export const CONFIG_PATH = '.agent/tracer.config.json'
+
+const MAX_PATTERN_LENGTH = 200
 
 export function matcherKey(kind: string, name: string): string {
   return `${kind}:${name}`
@@ -107,9 +142,54 @@ export function validateConfig(input: unknown, rootDir?: string): TraceConfig {
         `[tracer] traces[${i}].match.kind "${String(m.kind)}" is not supported (allowed: ${SUPPORTED_MATCH_KINDS.join(', ')})`,
       )
     }
-    if (typeof m.name !== 'string' || m.name.length === 0) {
-      throw new Error(`[tracer] traces[${i}].match.name must be a non-empty string`)
+
+    // Resolve pattern: prefer `pattern`, fall back to `name` for backward compat
+    let pattern: string | undefined
+    if (typeof m.pattern === 'string' && m.pattern.length > 0) {
+      pattern = m.pattern
+    } else if (typeof (m as any).name === 'string' && (m as any).name.length > 0) {
+      pattern = (m as any).name
+      console.warn(
+        `[tracer] traces[${i}].match.name is deprecated, use "pattern" instead`,
+      )
     }
+    if (!pattern) {
+      throw new Error(`[tracer] traces[${i}].match.pattern must be a non-empty string`)
+    }
+
+    // Validate patternType
+    let patternType: PatternType = 'exact'
+    if (m.patternType !== undefined) {
+      if (!SUPPORTED_PATTERN_TYPES.includes(m.patternType as PatternType)) {
+        throw new Error(
+          `[tracer] traces[${i}].match.patternType "${String(m.patternType)}" is not supported (allowed: ${SUPPORTED_PATTERN_TYPES.join(', ')})`,
+        )
+      }
+      patternType = m.patternType as PatternType
+    }
+
+    // Validate fileFilter
+    let fileFilter: string | undefined
+    if (m.fileFilter !== undefined) {
+      if (typeof m.fileFilter !== 'string' || m.fileFilter.length === 0) {
+        throw new Error(`[tracer] traces[${i}].match.fileFilter must be a non-empty string`)
+      }
+      fileFilter = m.fileFilter
+      try { globToRegex(fileFilter, '/') } catch {
+        throw new Error(`[tracer] traces[${i}].match.fileFilter is not a valid glob pattern`)
+      }
+    }
+
+    // Validate pattern length and regex compilability
+    if (pattern.length > MAX_PATTERN_LENGTH) {
+      throw new Error(`[tracer] traces[${i}].match.pattern must be ≤ ${MAX_PATTERN_LENGTH} chars`)
+    }
+    if (patternType !== 'exact') {
+      try { compilePattern(pattern, patternType) } catch {
+        throw new Error(`[tracer] traces[${i}].match.pattern is not a valid ${patternType} pattern`)
+      }
+    }
+
     const capture = Array.isArray(t.capture)
       ? t.capture
       : t.capture === undefined
@@ -126,7 +206,7 @@ export function validateConfig(input: unknown, rootDir?: string): TraceConfig {
     return {
       id: t.id,
       type: t.type as TraceType,
-      match: { kind: m.kind as MatchKind, name: m.name },
+      match: { kind: m.kind as MatchKind, pattern, patternType, fileFilter },
       capture: capture as string[],
     }
   })
@@ -138,12 +218,35 @@ export function validateConfig(input: unknown, rootDir?: string): TraceConfig {
 }
 
 export function buildMatcherIndex(config: TraceConfig): MatcherIndex {
-  const index: MatcherIndex = new Map()
+  const exact = new Map<string, Trace[]>()
+  const patterns: PatternEntry[] = []
+
   for (const trace of config.traces) {
-    const key = matcherKey(trace.match.kind, trace.match.name)
-    const list = index.get(key)
-    if (list) list.push(trace)
-    else index.set(key, [trace])
+    const { kind, pattern, patternType = 'exact', fileFilter } = trace.match
+
+    if (patternType === 'exact') {
+      const key = matcherKey(kind, pattern)
+      const list = exact.get(key)
+      if (list) list.push(trace)
+      else exact.set(key, [trace])
+    } else {
+      let entry = patterns.find(
+        (e) => e.kind === kind && e.pattern === pattern && e.patternType === patternType,
+      )
+      if (!entry) {
+        entry = {
+          kind,
+          pattern,
+          patternType,
+          compiledRegex: compilePattern(pattern, patternType),
+          fileFilterRegex: fileFilter ? globToRegex(fileFilter, '/') : null,
+          traces: [],
+        }
+        patterns.push(entry)
+      }
+      entry.traces.push(trace)
+    }
   }
-  return index
+
+  return { exact, patterns }
 }

@@ -98,12 +98,12 @@ export class HuaqiFEWebpackPlugin {
           stage: webpack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE,
         },
         (assets) => {
-          if (!this.hasDevServer || this.index.size === 0) return
+          if (!this.hasDevServer || (this.index.exact.size === 0 && this.index.patterns.length === 0)) return
           for (const name of Object.keys(assets)) {
             if (!JS_EXT_RE.test(name)) continue
             const source = assets[name].source()
             if (typeof source !== 'string') continue
-            const result = inject(source, this.index)
+            const result = inject(source, this.index, { filePath: name })
             if (!result.hasInjection) continue
             const { sources } = webpack
             compilation.updateAsset(name, new sources.RawSource(result.code))

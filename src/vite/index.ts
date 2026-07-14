@@ -53,8 +53,8 @@ export function huaqiFEVitePlugin(options: HuaqiFEVitePluginOptions = {}): Plugi
       if (id.includes('/node_modules/') || id.includes('\\node_modules\\')) return null
       if (!JS_EXT_RE.test(id)) return null
       const index = buildMatcherIndex(config)
-      if (index.size === 0) return null
-      const result = inject(code, index)
+      if (index.exact.size === 0 && index.patterns.length === 0) return null
+      const result = inject(code, index, { filePath: id })
       if (!result.hasInjection) return null
       return { code: result.code, map: null }
     },
